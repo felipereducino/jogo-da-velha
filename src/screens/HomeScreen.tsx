@@ -6,6 +6,7 @@ const Container = styled.View`
   flex: 1;
   align-items: center;
   justify-content: center;
+  background-color: rgba(0, 0, 0, 0.85);
 `;
 
 const Title = styled.Text`
@@ -15,24 +16,26 @@ const Title = styled.Text`
 `;
 
 const Button = styled.TouchableOpacity`
-  background-color: #7fdbff;
+  background-color: #002546;
   padding: 12px 24px;
-  border-radius: 8px;
+  border-radius: 16px;
   margin: 8px;
   align-items: center;
+  width: 300px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
 `;
 
 const ButtonText = styled.Text`
   color: #ffffff;
-  font-size: 16px;
+  font-size: 32px;
   font-weight: bold;
 `;
 
 export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => (
   <Container>
     <Image source={require("../assets/logo.png")} />
-
-    <Title>Jogo da Velha</Title>
 
     <Button onPress={() => navigation.navigate("Game")}>
       <ButtonText>Jogar Agora</ButtonText>

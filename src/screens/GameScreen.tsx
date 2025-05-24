@@ -4,10 +4,11 @@ import React, { useState } from "react";
 import {
   TouchableOpacity,
   Text,
-  View,
   StyleSheet,
   Dimensions,
   Modal,
+  Animated,
+  Image,
 } from "react-native";
 import styled from "styled-components/native";
 
@@ -49,72 +50,135 @@ function getResult(board: Board): Player | "Tie" | null {
 // ————————————————————————
 
 const { width } = Dimensions.get("window");
-const CELL_SIZE = width / 3 - 2;
+const CELL_SIZE = width / 3 - 12; // smaller to allow padding
 
+// —— Styled-components ——
 const Container = styled.View`
   flex: 1;
-  background-color: #fff;
+  background-color: #0f0f0f;
   align-items: center;
   justify-content: center;
 `;
+
+const StatusText = styled.Text`
+  font-size: 22px;
+  margin-bottom: 16px;
+  color: #00e5ff;
+  text-shadow: 0 0 8px #00e5ff;
+`;
+
+const BoardContainer = styled.View`
+  background-color: #1a1a1a;
+  padding: 6px;
+  border-radius: 16px;
+  border: 2px solid #ff3c78;
+  margin-bottom: 24px;
+  shadow-color: #ff3c78;
+  shadow-offset: 0px 0px;
+  shadow-opacity: 0.7;
+  shadow-radius: 12px;
+  elevation: 10;
+`;
+
 const Row = styled.View`
   flex-direction: row;
 `;
+
 const CellButton = styled(TouchableOpacity)`
   width: ${CELL_SIZE}px;
   height: ${CELL_SIZE}px;
-  border: 1px solid #333;
+  margin: 3px;
+  border: 2px solid #00e5ff;
+  border-radius: 8px;
+  background-color: #111;
   align-items: center;
   justify-content: center;
-`;
-const ResetButton = styled(TouchableOpacity)`
-  margin-top: 24px;
-  background-color: #0074d9;
-  padding: 12px 32px;
-  border-radius: 8px;
-`;
-const ResetText = styled.Text`
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-`;
-const StatusText = styled.Text`
-  font-size: 20px;
-  margin-bottom: 12px;
-  color: #333;
+  shadow-color: #00e5ff;
+  shadow-offset: 0px 0px;
+  shadow-opacity: 0.9;
+  shadow-radius: 6px;
+  elevation: 8;
 `;
 
-// —— Modal Styled-Components ——
+const CellText = styled.Text`
+  font-size: 36px;
+  color: #ff3c78;
+  text-shadow: 0 0 6px #ff3c78;
+`;
+
+const ResetButton = styled(TouchableOpacity)`
+  margin-top: 16px;
+  background-color: #ff3c78;
+  padding: 12px 32px;
+  border-radius: 12px;
+  shadow-color: #ff3c78;
+  shadow-offset: 0px 0px;
+  shadow-opacity: 0.8;
+  shadow-radius: 6px;
+  elevation: 8;
+`;
+
+const ResetText = styled.Text`
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 0 0 4px #000;
+`;
+
+// —— Modal Styled-Components —— (keeping your gamer style)
 const Overlay = styled.View`
   flex: 1;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.85);
   align-items: center;
   justify-content: center;
 `;
+
 const ModalContainer = styled.View`
   width: 80%;
-  background-color: #fff;
-  border-radius: 12px;
+  background-color: #1a1a1a;
+  border: 2px solid #00e5ff;
+  border-radius: 16px;
   padding: 24px;
   align-items: center;
+  shadow-color: #00e5ff;
+  shadow-offset: 0px 0px;
+  shadow-opacity: 0.8;
+  shadow-radius: 12px;
+  elevation: 12;
 `;
+
 const ModalTitle = styled.Text`
-  font-size: 24px;
+  font-size: 26px;
   font-weight: bold;
-  margin-bottom: 16px;
-  color: #0074d9;
+  margin-bottom: 12px;
+  color: #00e5ff;
+  text-shadow: 0 0 8px #00e5ff;
   text-align: center;
 `;
-const ModalButton = styled(TouchableOpacity)`
-  margin-top: 8px;
-  background-color: #0074d9;
-  padding: 12px 24px;
-  border-radius: 8px;
+
+const ModalImage = styled(Image)`
+  width: 180px;
+  height: 180px;
+  margin-bottom: 12px;
 `;
+
+const ModalButton = styled(TouchableOpacity)`
+  margin-top: 12px;
+  background-color: #ff3c78;
+  padding: 12px 28px;
+  border-radius: 10px;
+  shadow-color: #ff3c78;
+  shadow-offset: 0px 0px;
+  shadow-opacity: 0.8;
+  shadow-radius: 6px;
+  elevation: 8;
+`;
+
 const ModalButtonText = styled.Text`
   color: #fff;
   font-size: 16px;
   font-weight: bold;
+  text-shadow: 0 0 4px #000;
 `;
 
 export const GameScreen: React.FC = () => {
@@ -137,42 +201,58 @@ export const GameScreen: React.FC = () => {
     setTurn("X");
   };
 
-  // Mensagem do modal
+  // 1. Determine flags up‐front
+  const isTie = result === "Tie";
+  const isWin = result === "X" || result === "O";
+  const showModal = isTie || isWin;
+
+  // 2. Choose message & image
   let message = "";
-  if (result === "Tie") message = "É um empate!";
-  else if (result) message = `O vencedor é: ${result}`;
+  let banner: any = null;
+
+  if (isTie) {
+    message = "EMPATE!";
+    banner = require("../assets/tie-banner.png");
+  } else if (isWin) {
+    // if X, you win; if O, you lose
+    message = result === "X" ? "VOCÊ VENCEU!" : "VOCÊ PERDEU!";
+    banner = require("../assets/winner-banner.png");
+  }
 
   return (
     <Container>
-      <StatusText>{result ? message : `Vez de: ${turn}`}</StatusText>
+      <StatusText>{result ? message : `Turno: ${turn}`}</StatusText>
 
-      {/* Tabuleiro */}
-      {[0, 1, 2].map((r) => (
-        <Row key={r}>
-          {[0, 1, 2].map((c) => {
-            const idx = r * 3 + c;
-            return (
-              <CellButton key={idx} onPress={() => handlePress(idx)}>
-                <Text style={styles.cellText}>{board[idx]}</Text>
-              </CellButton>
-            );
-          })}
-        </Row>
-      ))}
+      {/* Board */}
+      <BoardContainer>
+        {[0, 1, 2].map((r) => (
+          <Row key={r}>
+            {[0, 1, 2].map((c) => {
+              const idx = r * 3 + c;
+              return (
+                <CellButton key={idx} onPress={() => handlePress(idx)}>
+                  <CellText>{board[idx]}</CellText>
+                </CellButton>
+              );
+            })}
+          </Row>
+        ))}
+      </BoardContainer>
 
       <ResetButton onPress={handleReset}>
         <ResetText>Reiniciar</ResetText>
       </ResetButton>
 
-      {/* —— Modal —— */}
+      {/* Modal */}
       <Modal
-        visible={!!result}
+        visible={showModal}
         transparent
         animationType="fade"
         onRequestClose={handleReset}
       >
         <Overlay>
           <ModalContainer>
+            {banner && <ModalImage source={banner} />}
             <ModalTitle>{message}</ModalTitle>
             <ModalButton onPress={handleReset}>
               <ModalButtonText>Jogar Novamente</ModalButtonText>
@@ -183,10 +263,3 @@ export const GameScreen: React.FC = () => {
     </Container>
   );
 };
-
-const styles = StyleSheet.create({
-  cellText: {
-    fontSize: 32,
-    color: "#0074d9",
-  },
-});
